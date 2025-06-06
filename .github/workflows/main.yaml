@@ -18,9 +18,10 @@ jobs:
         with:
           terraform_version: 1.8.4
 
-      - name: Configurar credenciais do GCP
+      - name: Restaurar credentials.json a partir do secret codificado
         run: |
-          printf '%s' "${{ secrets.GCP_CREDENTIALS }}" > ./terraform/credentials.json
+          echo "${{ secrets.GCP_CREDENTIALS_B64 }}" | base64 -d > ./terraform/credentials.json
+
 
       - name: Terraform Init
         run: terraform init
