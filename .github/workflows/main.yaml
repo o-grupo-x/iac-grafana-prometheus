@@ -20,7 +20,7 @@ jobs:
 
       - name: Configurar credenciais do GCP
         run: |
-          echo "${{ secrets.GCP_CREDENTIALS }}" > ./terraform/credentials.json
+          printf '%s' "${{ secrets.GCP_CREDENTIALS }}" > ./terraform/credentials.json
 
       - name: Terraform Init
         run: terraform init
