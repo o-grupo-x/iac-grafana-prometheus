@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: Terraform Plan & Deploy Pipeline
 
 on:
   push:
@@ -22,11 +22,15 @@ jobs:
         run: |
           echo "${{ secrets.GCP_CREDENTIALS_B64 }}" | base64 -d > ./terraform/credentials.json
 
-
       - name: Terraform Init
         run: terraform init
         working-directory: ./terraform
 
-      - name: Terraform Plan
-        run: terraform plan
+      - name: Executar Terraform Plan ou Apply conforme branch
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            terraform apply -auto-approve
+          else
+            terraform plan
+          fi
         working-directory: ./terraform
