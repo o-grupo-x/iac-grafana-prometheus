@@ -1,0 +1,36 @@
+name: Terraform Plan & Deploy Pipeline
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Instalar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.4
+
+      - name: Restaurar credentials.json a partir do secret codificado
+        run: |
+          echo "${{ secrets.GCP_CREDENTIALS_B64 }}" | base64 -d > ./terraform/credentials.json
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./terraform
+
+      - name: Executar Terraform Plan ou Apply conforme branch
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            terraform apply -auto-approve
+          else
+            terraform plan
+          fi
+        working-directory: ./terraform
