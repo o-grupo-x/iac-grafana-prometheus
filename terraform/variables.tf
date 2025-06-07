@@ -33,3 +33,9 @@ variable "commit_id" {
   type        = string
   default     = ""
 }
+
+variable "network_name" {
+  description = "VPC network to deploy resources in"
+  type        = string
+  default     = "default"
+}
