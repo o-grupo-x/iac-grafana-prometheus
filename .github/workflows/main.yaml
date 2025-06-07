@@ -1,13 +1,11 @@
 name: Terraform Plan & Deploy Pipeline
-
 on:
   push:
     branches: [main, dev]
   pull_request:
     branches: [main, dev]
-
 jobs:
-  terraform:
+  terraform-and-ansible:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout código
@@ -18,7 +16,7 @@ jobs:
         with:
           terraform_version: 1.8.4
 
-      - name: Restaurar credentials.json a partir do secret codificado
+      - name: Restaurar credentials.json
         run: |
           echo "${{ secrets.GCP_CREDENTIALS_B64 }}" | base64 -d > ./terraform/credentials.json
 
@@ -26,7 +24,7 @@ jobs:
         run: terraform init
         working-directory: ./terraform
 
-      - name: Executar Terraform Plan ou Apply conforme branch
+      - name: Terraform Plan ou Apply
         run: |
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             terraform apply -auto-approve
@@ -34,3 +32,25 @@ jobs:
             terraform plan
           fi
         working-directory: ./terraform
+
+      - name: Instalar Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Configurar SSH para Ansible
+        run: |
+          echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" > ./ansible/ssh_key
+          chmod 600 ./ansible/ssh_key
+        working-directory: ./ansible
+
+      - name: Atualizar inventory com IP da VM
+        run: |
+          VM_IP=$(terraform output -raw instance_ip)
+          echo "[vm]\n$VM_IP ansible_user=debian ansible_ssh_private_key_file=./ansible/ssh_key" > ./ansible/hosts.ini
+        working-directory: ./terraform
+
+      - name: Executar Ansible Playbook
+        run: |
+          ansible-playbook -i hosts.ini playbook.yaml
+        working-directory: ./ansible

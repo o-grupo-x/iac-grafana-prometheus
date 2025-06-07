@@ -1,0 +1,8 @@
+- name: Ensure docker-compose.yaml is present
+  copy:
+    src: ../../docker-compose.yaml
+    dest: /home/debian/docker-compose.yaml
+    mode: '0644'
+
+- name: Start Grafana container
+  command: docker-compose -f /home/debian/docker-compose.yaml up -d grafana

@@ -16,7 +16,7 @@ resource "google_compute_firewall" "allow_ports" {
 
   allow {
     protocol = "tcp"
-    ports    = ["22", "3000", "9090"]
+    ports    = ["22", "3000", "9090", "9100"]
   }
 
   source_ranges = ["0.0.0.0/0"]
@@ -30,6 +30,7 @@ resource "google_compute_instance" "vm_instance" {
   boot_disk {
     initialize_params {
       image = "debian-cloud/debian-11"
+      size = 20
     }
   }
 
@@ -39,6 +40,10 @@ resource "google_compute_instance" "vm_instance" {
     access_config {
       # Reservar IP externo
     }
+  }
+
+  metadata = {
+    ssh-keys = "debian:${file(var.ssh_public_key)}"
   }
 
   metadata_startup_script = <<-EOT
