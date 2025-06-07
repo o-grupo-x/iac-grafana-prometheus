@@ -58,3 +58,10 @@ jobs:
           ansible-playbook -i hosts.ini playbook.yaml
         working-directory: ./ansible
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
+
+      - name: Mostrar URL do Grafana
+        run: |
+          VM_IP=$(terraform output -raw instance_ip)
+          echo "Grafana disponível em: http://$VM_IP"
+        working-directory: ./terraform
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
