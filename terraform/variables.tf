@@ -27,3 +27,9 @@ variable "ssh_public_key" {
   type        = string
   default     = ""
 }
+
+variable "commit_id" {
+  description = "Commit ID used to uniquely name resources"
+  type        = string
+  default     = ""
+}
