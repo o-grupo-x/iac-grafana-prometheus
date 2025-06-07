@@ -1,15 +1,29 @@
 variable "project_id" {
-  default = "app-chamada-5706"
+  description = "GCP project ID"
+  type        = string
+  default     = "app-chamada-5706"
 }
 
 variable "region" {
-  default = "us-central1"
+  description = "GCP region"
+  type        = string
+  default     = "us-central1"
 }
 
 variable "zone" {
-  default = "us-central1-a"
+  description = "GCP zone"
+  type        = string
+  default     = "us-central1-a"
 }
 
 variable "instance_name" {
-  default = "instance-grafana-prometheus"
+  description = "Name of the VM instance"
+  type        = string
+  default     = "instance-grafana-prometheus"
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key content"
+  type        = string
+  default     = ""
 }
