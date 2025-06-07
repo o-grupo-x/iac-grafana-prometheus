@@ -43,7 +43,7 @@ resource "google_compute_instance" "vm_instance" {
   }
 
   metadata = {
-    ssh-keys = "debian:${file(var.ssh_public_key)}"
+    ssh-keys = "debian:${var.ssh_public_key}"
   }
 
   metadata_startup_script = <<-EOT
