@@ -1,2 +1,0 @@
-- name: Start node-exporter container
-  command: docker-compose -f /home/debian/docker-compose.yaml up -d node-exporter
