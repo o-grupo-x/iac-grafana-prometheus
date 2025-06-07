@@ -27,9 +27,9 @@ jobs:
       - name: Terraform Plan ou Apply
         run: |
           if [ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ github.ref }}" = "refs/heads/gui" ]; then
-            terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}"
+            terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" -var="commit_id=${GITHUB_SHA}"
           else
-            terraform plan -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}"
+            terraform plan -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" -var="commit_id=${GITHUB_SHA}"
           fi
         working-directory: ./terraform
 
@@ -41,18 +41,15 @@ jobs:
 
       - name: Configurar SSH para Ansible
         run: |
-          # Ensure ansible directory exists
-          mkdir -p ./ansible
-          # Write the SSH private key from secret directly
-          echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" > ./ansible/ssh_key
-          chmod 600 ./ansible/ssh_key
-        working-directory: ./ansible
+          mkdir -p ansible
+          echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" > ansible/ssh_key
+          chmod 600 ansible/ssh_key
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
 
       - name: Atualizar inventory com IP da VM
         run: |
           VM_IP=$(terraform output -raw instance_ip)
-          echo "[vm]\n$VM_IP ansible_user=debian ansible_ssh_private_key_file=./ansible/ssh_key" > ./ansible/hosts.ini
+          echo "[vm]\n$VM_IP ansible_user=debian ansible_ssh_private_key_file=ssh_key" > ../ansible/hosts.ini
         working-directory: ./terraform
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
 
