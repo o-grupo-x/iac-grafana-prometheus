@@ -1,9 +1,9 @@
 name: Terraform Plan & Deploy Pipeline
 on:
   push:
-    branches: [main, dev]
+    branches: [main, dev, gui]
   pull_request:
-    branches: [main, dev]
+    branches: [main, dev, gui]
 jobs:
   terraform-and-ansible:
     runs-on: ubuntu-latest
