@@ -6,14 +6,9 @@ provider "google" {
 }
 
 
-resource "google_compute_network" "vpc_network" {
-  name = "${var.instance_name}-${substr(var.commit_id,0,8)}-vpc"
-  auto_create_subnetworks = true
-}
-
 resource "google_compute_firewall" "allow_ports" {
   name    = "allow-ssh-grafana-prometheus-${substr(var.commit_id,0,8)}"
-  network = google_compute_network.vpc_network.name
+  network = var.network_name
 
   allow {
     protocol = "tcp"
@@ -36,7 +31,7 @@ resource "google_compute_instance" "vm_instance" {
   }
 
   network_interface {
-    network = google_compute_network.vpc_network.name
+    network = var.network_name
 
     access_config {
       # Reservar IP externo
