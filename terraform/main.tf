@@ -7,12 +7,12 @@ provider "google" {
 
 
 resource "google_compute_network" "vpc_network" {
-  name = "${var.instance_name}-vpc-v2"
+  name = "${var.instance_name}-${substr(var.commit_id,0,8)}-vpc"
   auto_create_subnetworks = true
 }
 
 resource "google_compute_firewall" "allow_ports" {
-  name    = "allow-ssh-grafana-prometheus"
+  name    = "allow-ssh-grafana-prometheus-${substr(var.commit_id,0,8)}"
   network = google_compute_network.vpc_network.name
 
   allow {
@@ -24,7 +24,7 @@ resource "google_compute_firewall" "allow_ports" {
 }
 
 resource "google_compute_instance" "vm_instance" {
-  name         = var.instance_name
+  name         = "${var.instance_name}-${substr(var.commit_id,0,8)}"
   machine_type = "e2-medium"
   zone         = var.zone
 

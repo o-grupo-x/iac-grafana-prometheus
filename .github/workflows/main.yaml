@@ -27,9 +27,9 @@ jobs:
       - name: Terraform Plan ou Apply
         run: |
           if [ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ github.ref }}" = "refs/heads/gui" ]; then
-            terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}"
+            terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" -var="commit_id=${GITHUB_SHA}"
           else
-            terraform plan -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}"
+            terraform plan -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" -var="commit_id=${GITHUB_SHA}"
           fi
         working-directory: ./terraform
 
