@@ -7,7 +7,8 @@ provider "google" {
 
 
 resource "google_compute_network" "vpc_network" {
-  name = "grafana-prometheus-vpc"
+  name = "${var.instance_name}-vpc-v2"
+  auto_create_subnetworks = true
 }
 
 resource "google_compute_firewall" "allow_ports" {
