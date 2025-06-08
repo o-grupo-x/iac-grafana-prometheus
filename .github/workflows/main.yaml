@@ -52,8 +52,9 @@ jobs:
       - name: Configurar SSH para Ansible
         run: |
           mkdir -p ansible
-          printf '%s' "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" | tr -d '\r' > ansible/ssh_key
+          echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY_B64 }}" | base64 -d | tr -d '\r' > ansible/ssh_key
           chmod 600 ansible/ssh_key
+          ssh-keygen -y -f ansible/ssh_key >/dev/null
 
       - name: Atualizar inventory com IP da VM
         run: |

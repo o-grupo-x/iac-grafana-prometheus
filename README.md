@@ -14,8 +14,8 @@ This repository contains Terraform configuration to provision a Debian VM on Goo
 2. Run `terraform init` and `terraform apply` in the `terraform` directory.
 3. Note the VM's public IP from Terraform outputs.
 4. Run `./update_inventory.sh` to populate `ansible/hosts.ini` with the VM IP.
-5. Place your private SSH key in `ansible/ssh_key` (the file path is referenced
-   from `hosts.ini`) and run the playbook:
+5. Save your private SSH key base64 encoded in the `ANSIBLE_SSH_PRIVATE_KEY_B64`
+   secret and run the playbook (the inventory references `ansible/ssh_key`):
 
 ```bash
 ansible-playbook -i ansible/hosts.ini ansible/playbook.yaml
