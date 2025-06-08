@@ -61,6 +61,26 @@ jobs:
           echo "Grafana disponível em: http://$VM_IP"
         working-directory: ./terraform
 
+      - name: Cleanup old instances
+        if: success()
+        run: |
+          gcloud auth activate-service-account --key-file=./terraform/credentials.json
+          gcloud config set project app-chamada-5706
+          CURRENT_ID="${COMMIT_ID:0:8}"
+          gcloud compute instances list --filter="name~'instance-grafana-prometheus-'" --format=json \
+            | jq -r '.[] | [.name, (.zone | split("/")[-1])] | @tsv' \
+            | while IFS=$'\t' read -r NAME ZONE; do
+                if [ "$NAME" != "instance-grafana-prometheus-$CURRENT_ID" ]; then
+                  gcloud compute instances delete "$NAME" --zone "$ZONE" --quiet
+                fi
+              done
+          gcloud compute firewall-rules list --filter="name~'allow-ssh-grafana-prometheus-'" --format='value(name)' \
+            | while read -r RULE; do
+                if [ "$RULE" != "allow-ssh-grafana-prometheus-$CURRENT_ID" ]; then
+                  gcloud compute firewall-rules delete "$RULE" --quiet
+                fi
+              done
+        
       - name: Destroy infrastructure
         if: env.DESTROY_AFTER_RUN == 'true'
         run: terraform destroy -auto-approve -var="commit_id=${{ env.COMMIT_ID }}"
