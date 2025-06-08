@@ -13,13 +13,7 @@ This repository contains Terraform configuration to provision a Debian VM on Goo
 1. Create `terraform/credentials.json` with a service account key that has appropriate permissions.
 2. Run `terraform init` and `terraform apply` in the `terraform` directory.
 3. Note the VM's public IP from Terraform outputs.
-4. Install Ansible locally and update `ansible/hosts.ini` with the VM IP:
-
-```ini
-[vm]
-<vm-ip> ansible_user=debian ansible_ssh_private_key_file=ssh_key
-```
-
+4. Run `./update_inventory.sh` to populate `ansible/hosts.ini` with the VM IP.
 5. Place your private SSH key in `ansible/ssh_key` and run the playbook:
 
 ```bash
