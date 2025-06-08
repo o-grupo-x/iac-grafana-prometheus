@@ -1,5 +1,4 @@
 name: Terraform Plan & Deploy Pipeline
-
 on:
   push:
     branches: [main, gui, dev]
@@ -28,17 +27,6 @@ jobs:
             exit 1
           fi
 
-      - name: Configurar SSH para Ansible
-        run: |
-          if [ -z "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY_B64 }}" ]; then
-            echo "Error: ANSIBLE_SSH_PRIVATE_KEY_B64 secret is not set" >&2
-            exit 1
-          fi
-          mkdir -p ansible
-          echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY_B64 }}" | base64 -d | tr -d '\r' > ansible/ssh_key
-          chmod 600 ansible/ssh_key
-          ssh-keygen -y -f ansible/ssh_key >/dev/null
-        
       - name: Terraform Init
         run: terraform init
         working-directory: ./terraform
@@ -80,6 +68,20 @@ jobs:
           ./update_inventory.sh
           cat ansible/hosts.ini
 
+      - name: Wait for VM to be ready
+        run: |
+          VM_IP=$(terraform -chdir=./terraform output -raw instance_ip)
+          for i in {1..30}; do
+            if ssh -i ansible/ssh_key -o ConnectTimeout=10 debian@$VM_IP "echo 2>/dev/null" 2>/dev/null; then
+              echo "VM is ready"
+              break
+            fi
+            echo "Waiting for VM... ($i/30)"
+            sleep 10
+          done
+        working-directory: ./ansible
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
+
       - name: Add host to known_hosts
         run: |
           VM_IP=$(terraform -chdir=./terraform output -raw instance_ip)
@@ -90,6 +92,7 @@ jobs:
         run: |
           ansible-playbook -i hosts.ini playbook.yaml
         working-directory: ./ansible
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
 
       - name: Mostrar URL do Grafana
         run: |
