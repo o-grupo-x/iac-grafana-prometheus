@@ -1,13 +1,4 @@
 name: Terraform Plan & Deploy Pipeline
-      GCP_PROJECT: app-chamada-5706
-
-      - name: Pre-clean existing resources
-        run: |
-          gcloud auth activate-service-account --key-file=./terraform/credentials.json
-          gcloud config set project ${{ env.GCP_PROJECT }}
-          CID="${COMMIT_ID:0:8}"
-          gcloud compute instances delete "instance-grafana-prometheus-$CID" --zone us-central1-a --quiet || true
-          gcloud compute firewall-rules delete "allow-ssh-grafana-prometheus-$CID" --quiet || true
 
 on:
   push:
