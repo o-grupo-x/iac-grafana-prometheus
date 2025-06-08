@@ -21,3 +21,4 @@ ansible-playbook -i ansible/hosts.ini ansible/playbook.yaml
 ```
 
 The playbook installs Docker on the VM and starts Grafana, Prometheus, Node Exporter and nginx containers.
+
