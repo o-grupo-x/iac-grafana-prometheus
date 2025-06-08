@@ -5,6 +5,8 @@ on:
 jobs:
   terraform-and-ansible:
     runs-on: ubuntu-latest
+    env:
+      DESTROY_AFTER_RUN: ${{ secrets.DESTROY_AFTER_RUN || 'false' }}
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -22,8 +24,11 @@ jobs:
         run: terraform init
         working-directory: ./terraform
 
+      - name: Set commit ID
+        run: echo "COMMIT_ID=${GITHUB_SHA}" >> $GITHUB_ENV
+
       - name: Terraform Apply
-        run: terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" -var="commit_id=${GITHUB_SHA}"
+        run: terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" -var="commit_id=${{ env.COMMIT_ID }}"
         working-directory: ./terraform
 
       - name: Instalar Ansible
@@ -52,4 +57,9 @@ jobs:
         run: |
           VM_IP=$(terraform output -raw instance_ip)
           echo "Grafana disponível em: http://$VM_IP"
+        working-directory: ./terraform
+
+      - name: Destroy infrastructure
+        if: env.DESTROY_AFTER_RUN == 'true'
+        run: terraform destroy -auto-approve -var="commit_id=${{ env.COMMIT_ID }}"
         working-directory: ./terraform
