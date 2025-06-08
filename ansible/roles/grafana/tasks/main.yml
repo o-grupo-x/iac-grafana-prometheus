@@ -1,6 +1,6 @@
 - name: Ensure docker-compose.yaml is present
   copy:
-    src: ../../docker-compose.yaml
+    src: "{{ playbook_dir }}/../docker-compose.yaml"
     dest: /home/debian/docker-compose.yaml
     mode: '0644'
 
