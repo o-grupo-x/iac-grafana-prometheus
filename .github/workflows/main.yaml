@@ -42,9 +42,25 @@ jobs:
           gcloud compute instances delete "instance-grafana-prometheus-$CID" --zone us-central1-a --quiet || true
           gcloud compute firewall-rules delete "allow-ssh-grafana-prometheus-$CID" --quiet || true
 
+      - name: Generate SSH key pair
+        run: |
+          mkdir -p ansible
+          ssh-keygen -t rsa -b 4096 -f ansible/ssh_key -N ""
+          echo "SSH_PUBLIC_KEY=$(cat ansible/ssh_key.pub)" >> $GITHUB_ENV
+    
       - name: Terraform Apply
-        run: terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" -var="commit_id=${{ env.COMMIT_ID }}"
+        run: terraform apply -auto-approve -var="ssh_public_key=$SSH_PUBLIC_KEY" -var="commit_id=${{ env.COMMIT_ID }}"
         working-directory: ./terraform
+
+      - name: Update Ansible inventory with VM IP
+        run: |
+          VM_IP=$(terraform -chdir=./terraform output -raw instance_ip)
+          echo "[vm]" > ansible/hosts.ini
+          echo "$VM_IP ansible_user=debian ansible_ssh_private_key_file=ansible/ssh_key" >> ansible/hosts.ini
+
+      - name: Run Ansible Playbook
+        run: ansible-playbook -i hosts.ini playbook.yaml
+        working-directory: ./ansible
 
       - name: Instalar Ansible
         run: |
