@@ -6,8 +6,12 @@ provider "google" {
 }
 
 
+locals {
+  cid = var.commit_id != "" ? substr(var.commit_id, 0, 8) : "manual"
+}
+
 resource "google_compute_firewall" "allow_ports" {
-  name    = "allow-ssh-grafana-prometheus-${substr(var.commit_id,0,8)}"
+  name    = "allow-ssh-grafana-prometheus-${local.cid}"
   network = var.network_name
 
   allow {
@@ -19,14 +23,14 @@ resource "google_compute_firewall" "allow_ports" {
 }
 
 resource "google_compute_instance" "vm_instance" {
-  name         = "${var.instance_name}-${substr(var.commit_id,0,8)}"
+  name         = "${var.instance_name}-${local.cid}"
   machine_type = "e2-medium"
   zone         = var.zone
 
   boot_disk {
     initialize_params {
       image = "debian-cloud/debian-11"
-      size = 20
+      size  = 20
     }
   }
 
