@@ -52,9 +52,9 @@ jobs:
             exit 1
           fi
           cat > ../ansible/hosts.ini <<EOF
-[vm]
-$VM_IP ansible_user=debian ansible_ssh_private_key_file=ssh_key
-EOF
+            [vm]
+            $VM_IP ansible_user=debian ansible_ssh_private_key_file=ssh_key
+            EOF
           cat ../ansible/hosts.ini
         working-directory: ./terraform
 
@@ -88,7 +88,7 @@ EOF
                   gcloud compute firewall-rules delete "$RULE" --quiet
                 fi
               done
-        
+
       - name: Destroy infrastructure
         if: env.DESTROY_AFTER_RUN == 'true'
         run: terraform destroy -auto-approve -var="commit_id=${{ env.COMMIT_ID }}"
