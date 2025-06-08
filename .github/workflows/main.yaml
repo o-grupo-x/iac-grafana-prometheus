@@ -1,4 +1,5 @@
 name: Terraform Plan & Deploy Pipeline
+
 on:
   push:
     branches: [main, gui, dev]
@@ -23,6 +24,10 @@ jobs:
         run: |
           echo "${{ secrets.GCP_CREDENTIALS_B64 }}" | base64 -d > ./terraform/credentials.json
 
+          if [ -z "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY_B64 }}" ]; then
+            echo "Error: ANSIBLE_SSH_PRIVATE_KEY_B64 secret is not set" >&2
+            exit 1
+          fi
       - name: Terraform Init
         run: terraform init
         working-directory: ./terraform
@@ -46,6 +51,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
 
       - name: Configurar SSH para Ansible
         run: |
