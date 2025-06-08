@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DESTROY_AFTER_RUN: ${{ secrets.DESTROY_AFTER_RUN || 'false' }}
+      GCP_PROJECT: app-chamada-5706
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -29,6 +30,14 @@ jobs:
 
       - name: Set commit ID
         run: echo "COMMIT_ID=${GITHUB_SHA}" >> $GITHUB_ENV
+
+      - name: Pre-clean existing resources
+        run: |
+          gcloud auth activate-service-account --key-file=./terraform/credentials.json
+          gcloud config set project ${{ env.GCP_PROJECT }}
+          CID="${COMMIT_ID:0:8}"
+          gcloud compute instances delete "instance-grafana-prometheus-$CID" --zone us-central1-a --quiet || true
+          gcloud compute firewall-rules delete "allow-ssh-grafana-prometheus-$CID" --quiet || true
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" -var="commit_id=${{ env.COMMIT_ID }}"
@@ -50,17 +59,13 @@ jobs:
 
       - name: Atualizar inventory com IP da VM
         run: |
-          VM_IP=$(terraform output -raw instance_ip 2>/dev/null)
-          if [ -z "$VM_IP" ]; then
-            echo "Error: instance_ip not available. Check Terraform apply status."
-            exit 1
-          fi
-          cat > ../ansible/hosts.ini <<EOF
-            [vm]
-            $VM_IP ansible_user=debian ansible_ssh_private_key_file=ssh_key
-            EOF
-          cat ../ansible/hosts.ini
-        working-directory: ./terraform
+          ./update_inventory.sh
+          cat ansible/hosts.ini
+
+      - name: Add host to known_hosts
+        run: |
+          VM_IP=$(terraform -chdir=./terraform output -raw instance_ip)
+          ssh-keyscan -H "$VM_IP" >> ~/.ssh/known_hosts
 
       - name: Executar Ansible Playbook
         run: |
