@@ -1,6 +1,6 @@
 - name: Copy nginx configuration
   copy:
-    src: ../nginx.conf
+    src: "{{ playbook_dir }}/../nginx.conf"
     dest: /home/debian/nginx.conf
     mode: '0644'
 
