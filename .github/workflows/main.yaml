@@ -1,9 +1,7 @@
 name: Terraform Plan & Deploy Pipeline
 on:
   push:
-    branches: [main, gui]
   pull_request:
-    branches: [main, gui]
 jobs:
   terraform-and-ansible:
     runs-on: ubuntu-latest
@@ -24,44 +22,34 @@ jobs:
         run: terraform init
         working-directory: ./terraform
 
-      - name: Terraform Plan ou Apply
-        run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ github.ref }}" = "refs/heads/gui" ]; then
-            terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" -var="commit_id=${GITHUB_SHA}"
-          else
-            terraform plan -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" -var="commit_id=${GITHUB_SHA}"
-          fi
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" -var="commit_id=${GITHUB_SHA}"
         working-directory: ./terraform
 
       - name: Instalar Ansible
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
 
       - name: Configurar SSH para Ansible
         run: |
           mkdir -p ansible
           echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" > ansible/ssh_key
           chmod 600 ansible/ssh_key
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
 
       - name: Atualizar inventory com IP da VM
         run: |
           VM_IP=$(terraform output -raw instance_ip)
           echo "[vm]\n$VM_IP ansible_user=debian ansible_ssh_private_key_file=ssh_key" > ../ansible/hosts.ini
         working-directory: ./terraform
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
 
       - name: Executar Ansible Playbook
         run: |
           ansible-playbook -i hosts.ini playbook.yaml
         working-directory: ./ansible
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
 
       - name: Mostrar URL do Grafana
         run: |
           VM_IP=$(terraform output -raw instance_ip)
           echo "Grafana disponível em: http://$VM_IP"
         working-directory: ./terraform
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
