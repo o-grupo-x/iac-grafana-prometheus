@@ -53,3 +53,8 @@ jobs:
           VM_IP=$(terraform output -raw instance_ip)
           echo "Grafana disponível em: http://$VM_IP"
         working-directory: ./terraform
+
+      - name: Destroy infrastructure
+        if: always()
+        run: terraform destroy -auto-approve
+        working-directory: ./terraform
