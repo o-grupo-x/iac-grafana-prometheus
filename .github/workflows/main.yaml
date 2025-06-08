@@ -23,11 +23,22 @@ jobs:
       - name: Restaurar credentials.json
         run: |
           echo "${{ secrets.GCP_CREDENTIALS_B64 }}" | base64 -d > ./terraform/credentials.json
-
           if [ -z "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY_B64 }}" ]; then
             echo "Error: ANSIBLE_SSH_PRIVATE_KEY_B64 secret is not set" >&2
             exit 1
           fi
+
+      - name: Configurar SSH para Ansible
+        run: |
+          if [ -z "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY_B64 }}" ]; then
+            echo "Error: ANSIBLE_SSH_PRIVATE_KEY_B64 secret is not set" >&2
+            exit 1
+          fi
+          mkdir -p ansible
+          echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY_B64 }}" | base64 -d | tr -d '\r' > ansible/ssh_key
+          chmod 600 ansible/ssh_key
+          ssh-keygen -y -f ansible/ssh_key >/dev/null
+        
       - name: Terraform Init
         run: terraform init
         working-directory: ./terraform
