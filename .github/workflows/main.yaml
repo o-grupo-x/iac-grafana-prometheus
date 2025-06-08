@@ -1,12 +1,15 @@
 name: Terraform Plan & Deploy Pipeline
+
 on:
   push:
     branches: [main, gui]
   pull_request:
     branches: [main, gui]
+
 jobs:
   terraform-and-ansible:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -49,12 +52,13 @@ jobs:
 
       - name: Atualizar inventory com IP da VM
         run: |
-          # Debug: Check if Terraform output is available
+          # Verifica se o IP foi retornado pelo Terraform
           if [ -z "$(terraform output -raw instance_ip 2>/dev/null)" ]; then
             echo "Error: instance_ip not available. Check Terraform apply status."
             exit 1
           fi
           VM_IP=$(terraform output -raw instance_ip)
+          # Escreve o arquivo de inventário
           echo "[vm]" > ./hosts.ini
           echo "$VM_IP ansible_user=debian ansible_ssh_private_key_file=./ssh_key" >> ./hosts.ini
         working-directory: ./ansible
