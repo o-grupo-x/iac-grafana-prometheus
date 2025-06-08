@@ -36,7 +36,6 @@ jobs:
           gcloud auth activate-service-account --key-file=./terraform/credentials.json
           gcloud config set project ${{ env.GCP_PROJECT }}
           CID="${COMMIT_ID:0:8}"
-          mkdir -p ~/.ssh
           gcloud compute instances delete "instance-grafana-prometheus-$CID" --zone us-central1-a --quiet || true
           gcloud compute firewall-rules delete "allow-ssh-grafana-prometheus-$CID" --quiet || true
 
@@ -52,11 +51,9 @@ jobs:
 
       - name: Configurar SSH para Ansible
         run: |
-          mkdir -p .
-          echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" > ./ssh_key
-          chmod 600 ./ssh_key
-        working-directory: ./ansible
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
+          mkdir -p ansible
+          printf '%s' "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" | tr -d '\r' > ansible/ssh_key
+          chmod 600 ansible/ssh_key
 
       - name: Atualizar inventory com IP da VM
         run: |
@@ -66,6 +63,7 @@ jobs:
       - name: Add host to known_hosts
         run: |
           VM_IP=$(terraform -chdir=./terraform output -raw instance_ip)
+          mkdir -p ~/.ssh
           ssh-keyscan -H "$VM_IP" >> ~/.ssh/known_hosts
 
       - name: Executar Ansible Playbook
