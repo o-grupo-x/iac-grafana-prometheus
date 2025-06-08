@@ -1,4 +1,5 @@
 name: Terraform Plan & Deploy Pipeline
+
 on:
   push:
     branches: [main, gui, dev]
@@ -46,12 +47,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
 
       - name: Configurar SSH para Ansible
         run: |
-          mkdir -p ansible
-          echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" > ansible/ssh_key
-          chmod 600 ansible/ssh_key
+          mkdir -p .
+          echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" > ./ssh_key
+          chmod 600 ./ssh_key
+        working-directory: ./ansible
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
 
       - name: Atualizar inventory com IP da VM
         run: |
