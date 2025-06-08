@@ -56,5 +56,5 @@ jobs:
 
       - name: Destroy infrastructure
         if: always()
-        run: terraform destroy -auto-approve
+        run: terraform destroy -auto-approve -var="commit_id=${GITHUB_SHA}"
         working-directory: ./terraform
