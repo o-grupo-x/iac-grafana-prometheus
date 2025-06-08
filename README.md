@@ -10,7 +10,9 @@ This repository contains Terraform configuration to provision a Debian VM on Goo
 
 ## Usage
 
-1. Create `terraform/credentials.json` with a service account key that has appropriate permissions.
+1. Encode a Google Cloud service account key as base64 and store it in the
+   `GCP_CREDENTIALS_B64` secret. The workflow decodes this value into
+   `terraform/credentials.json`. When running locally, create the file manually.
 2. Run `terraform init` and `terraform apply` in the `terraform` directory.
 3. Note the VM's public IP from Terraform outputs.
 4. Run `./update_inventory.sh` to populate `ansible/hosts.ini` with the VM IP.

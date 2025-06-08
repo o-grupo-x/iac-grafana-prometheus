@@ -55,6 +55,10 @@ jobs:
 
       - name: Configurar SSH para Ansible
         run: |
+          if [ -z "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY_B64 }}" ]; then
+            echo "Error: ANSIBLE_SSH_PRIVATE_KEY_B64 secret is not set" >&2
+            exit 1
+          fi
           mkdir -p ansible
           echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY_B64 }}" | base64 -d | tr -d '\r' > ansible/ssh_key
           chmod 600 ansible/ssh_key
