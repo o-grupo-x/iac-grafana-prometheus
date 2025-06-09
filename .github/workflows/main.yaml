@@ -58,7 +58,8 @@ jobs:
       - name: Update Ansible inventory with VM IP
         run: |
           echo "[vm]" > ansible/hosts.ini
-          echo "$VM_IP ansible_user=debian ansible_ssh_private_key_file=ansible/ssh_key" >> ansible/hosts.ini
+          echo "$VM_IP ansible_user=debian ansible_ssh_private_key_file=ssh_key" >> ansible/hosts.ini
+        working-directory: ./ansible
 
       - name: Instalar Ansible
         run: |
@@ -68,7 +69,7 @@ jobs:
       - name: Wait for VM to be ready
         run: |
           for i in {1..30}; do
-            if ssh -i ansible/ssh_key -o ConnectTimeout=10 -o StrictHostKeyChecking=no debian@$VM_IP "echo SSH ready" 2>/dev/null; then
+            if ssh -i ssh_key -o ConnectTimeout=10 -o StrictHostKeyChecking=no debian@$VM_IP "echo SSH ready" 2>/dev/null; then
               echo "VM SSH is ready"
               break
             fi
@@ -89,7 +90,6 @@ jobs:
       - name: Mostrar URL do Grafana
         run: |
           echo "Grafana disponível em: http://$VM_IP"
-
 
       - name: Cleanup old instances
         if: success()
