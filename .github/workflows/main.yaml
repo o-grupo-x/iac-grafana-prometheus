@@ -56,10 +56,10 @@ jobs:
         run: echo "VM_IP=$(terraform output -raw instance_ip)" >> $GITHUB_ENV
 
       - name: Update Ansible inventory with VM IP
-        run: |
-          echo "[vm]" > ansible/hosts.ini
-          echo "$VM_IP ansible_user=debian ansible_ssh_private_key_file=ssh_key" >> ansible/hosts.ini
         working-directory: ./ansible
+        run: |
+          echo "[vm]" > hosts.ini
+          echo "$VM_IP ansible_user=debian ansible_ssh_private_key_file=ssh_key" >> hosts.ini
 
       - name: Instalar Ansible
         run: |
@@ -67,6 +67,7 @@ jobs:
           sudo apt-get install -y ansible
 
       - name: Wait for VM to be ready
+        working-directory: ./ansible
         run: |
           for i in {1..30}; do
             if ssh -i ssh_key -o ConnectTimeout=10 -o StrictHostKeyChecking=no debian@$VM_IP "echo SSH ready" 2>/dev/null; then
@@ -76,7 +77,6 @@ jobs:
             echo "Waiting for VM SSH... ($i/30)"
             sleep 10
           done
-        working-directory: ./ansible
 
       - name: Add host to known_hosts
         run: |
@@ -84,8 +84,8 @@ jobs:
           ssh-keyscan -H "$VM_IP" >> ~/.ssh/known_hosts
 
       - name: Executar Ansible Playbook
-        run: ansible-playbook -i hosts.ini playbook.yaml
         working-directory: ./ansible
+        run: ansible-playbook -i hosts.ini playbook.yaml
 
       - name: Mostrar URL do Grafana
         run: |
