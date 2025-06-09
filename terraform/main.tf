@@ -47,8 +47,11 @@ resource "google_compute_instance" "vm_instance" {
 
   metadata_startup_script = <<-EOT
     #!/bin/bash
-    sudo apt-get update
-    sudo apt-get install -y python3 python3-pip
+    exec > /var/log/startup.log 2>&1
+    apt-get update
+    apt-get install -y openssh-server python3 python3-pip
+    systemctl enable ssh
+    systemctl start ssh
   EOT
 
   tags = ["grafana", "prometheus"]

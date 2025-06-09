@@ -22,10 +22,6 @@ jobs:
       - name: Restaurar credentials.json
         run: |
           echo "${{ secrets.GCP_CREDENTIALS_B64 }}" | base64 -d > ./terraform/credentials.json
-          if [ -z "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY_B64 }}" ]; then
-            echo "Error: ANSIBLE_SSH_PRIVATE_KEY_B64 secret is not set" >&2
-            exit 1
-          fi
 
       - name: Terraform Init
         run: terraform init
@@ -47,7 +43,7 @@ jobs:
           mkdir -p ansible
           ssh-keygen -t rsa -b 4096 -f ansible/ssh_key -N ""
           echo "SSH_PUBLIC_KEY=$(cat ansible/ssh_key.pub)" >> $GITHUB_ENV
-    
+
       - name: Terraform Apply
         run: terraform apply -auto-approve -var="ssh_public_key=$SSH_PUBLIC_KEY" -var="commit_id=${{ env.COMMIT_ID }}"
         working-directory: ./terraform
@@ -58,45 +54,23 @@ jobs:
           echo "[vm]" > ansible/hosts.ini
           echo "$VM_IP ansible_user=debian ansible_ssh_private_key_file=ansible/ssh_key" >> ansible/hosts.ini
 
-      - name: Run Ansible Playbook
-        run: ansible-playbook -i hosts.ini playbook.yaml
-        working-directory: ./ansible
-
       - name: Instalar Ansible
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
-
-      - name: Configurar SSH para Ansible
-        run: |
-          if [ -z "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY_B64 }}" ]; then
-            echo "Error: ANSIBLE_SSH_PRIVATE_KEY_B64 secret is not set" >&2
-            exit 1
-          fi
-          mkdir -p ansible
-          echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY_B64 }}" | base64 -d | tr -d '\r' > ansible/ssh_key
-          chmod 600 ansible/ssh_key
-          ssh-keygen -y -f ansible/ssh_key >/dev/null
-
-      - name: Atualizar inventory com IP da VM
-        run: |
-          ./update_inventory.sh
-          cat ansible/hosts.ini
 
       - name: Wait for VM to be ready
         run: |
           VM_IP=$(terraform -chdir=./terraform output -raw instance_ip)
           for i in {1..30}; do
-            if ssh -i ansible/ssh_key -o ConnectTimeout=10 debian@$VM_IP "echo 2>/dev/null" 2>/dev/null; then
-              echo "VM is ready"
+            if ssh -i ansible/ssh_key -o ConnectTimeout=10 -o StrictHostKeyChecking=no debian@$VM_IP "echo SSH ready" 2>/dev/null; then
+              echo "VM SSH is ready"
               break
             fi
-            echo "Waiting for VM... ($i/30)"
+            echo "Waiting for VM SSH... ($i/30)"
             sleep 10
           done
         working-directory: ./ansible
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
 
       - name: Add host to known_hosts
         run: |
@@ -105,10 +79,8 @@ jobs:
           ssh-keyscan -H "$VM_IP" >> ~/.ssh/known_hosts
 
       - name: Executar Ansible Playbook
-        run: |
-          ansible-playbook -i hosts.ini playbook.yaml
+        run: ansible-playbook -i hosts.ini playbook.yaml
         working-directory: ./ansible
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gui'
 
       - name: Mostrar URL do Grafana
         run: |
