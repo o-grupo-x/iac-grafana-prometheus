@@ -87,7 +87,9 @@ jobs:
         working-directory: ./ansible
 
       - name: Mostrar URL do Grafana
-        run: echo "Grafana disponível em: http://$VM_IP"
+        run: |
+          echo "Grafana disponível em: http://$VM_IP"
+
 
       - name: Cleanup old instances
         if: success()
