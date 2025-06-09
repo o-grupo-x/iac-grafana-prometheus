@@ -1,15 +1,18 @@
 name: Terraform Plan & Deploy Pipeline
+
 on:
   push:
     branches: [main, gui, dev]
   pull_request:
     branches: [main, gui, dev]
+
 jobs:
   terraform-and-ansible:
     runs-on: ubuntu-latest
     env:
       DESTROY_AFTER_RUN: ${{ secrets.DESTROY_AFTER_RUN || 'false' }}
       GCP_PROJECT: app-chamada-5706
+
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -48,14 +51,14 @@ jobs:
         run: terraform apply -auto-approve -var="ssh_public_key=$SSH_PUBLIC_KEY" -var="commit_id=${{ env.COMMIT_ID }}"
         working-directory: ./terraform
 
-      - name: Update Ansible inventory with VM IP
+      - name: Obter IP da VM e salvar em variável de ambiente
         working-directory: ./terraform
+        run: echo "VM_IP=$(terraform output -raw instance_ip)" >> $GITHUB_ENV
+
+      - name: Update Ansible inventory with VM IP
         run: |
-          VM_IP=$(terraform output -raw instance_ip)
-          cd ..
           echo "[vm]" > ansible/hosts.ini
           echo "$VM_IP ansible_user=debian ansible_ssh_private_key_file=ansible/ssh_key" >> ansible/hosts.ini
-
 
       - name: Instalar Ansible
         run: |
@@ -64,9 +67,6 @@ jobs:
 
       - name: Wait for VM to be ready
         run: |
-          cd terraform
-          VM_IP=$(terraform output -raw instance_ip)
-          cd ..
           for i in {1..30}; do
             if ssh -i ansible/ssh_key -o ConnectTimeout=10 -o StrictHostKeyChecking=no debian@$VM_IP "echo SSH ready" 2>/dev/null; then
               echo "VM SSH is ready"
@@ -79,9 +79,6 @@ jobs:
 
       - name: Add host to known_hosts
         run: |
-          cd terraform
-          VM_IP=$(terraform output -raw instance_ip)
-          cd ..
           mkdir -p ~/.ssh
           ssh-keyscan -H "$VM_IP" >> ~/.ssh/known_hosts
 
@@ -90,10 +87,7 @@ jobs:
         working-directory: ./ansible
 
       - name: Mostrar URL do Grafana
-        run: |
-          VM_IP=$(terraform output -raw instance_ip)
-          echo "Grafana disponível em: http://$VM_IP"
-        working-directory: ./terraform
+        run: echo "Grafana disponível em: http://$VM_IP"
 
       - name: Cleanup old instances
         if: success()
