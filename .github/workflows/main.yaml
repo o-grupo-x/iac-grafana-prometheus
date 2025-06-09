@@ -2,9 +2,9 @@ name: Terraform Plan & Deploy Pipeline
 
 on:
   push:
-    branches: [main, gui, dev]
+    branches: [main, dev, gui]
   pull_request:
-    branches: [main, gui, dev]
+    branches: [main, dev, gui]
 
 jobs:
   terraform-and-ansible:
