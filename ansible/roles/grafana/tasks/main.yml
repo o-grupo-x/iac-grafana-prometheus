@@ -19,7 +19,7 @@
 
 - name: Copiar JSON do dashboard
   copy:
-    src: "{{ playbook_dir }}/../roles/grafana/files/1860_rev40.json"
+    src: "{{ role_path }}/files/1860_rev40.json"
     dest: /home/debian/provisioning/dashboards/1860_rev40.json
     mode: '0644'
 
