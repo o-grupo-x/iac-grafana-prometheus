@@ -11,17 +11,5 @@
     mode: '0755'
     directory_mode: '0755'
 
-- name: Garantir que a pasta de dashboards existe
-  file:
-    path: /home/debian/provisioning/dashboards
-    state: directory
-    mode: '0755'
-
-- name: Copiar JSON do dashboard
-  copy:
-    src: "{{ role_path }}/files/1860_rev40.json"
-    dest: /home/debian/provisioning/dashboards/1860_rev40.json
-    mode: '0644'
-
 - name: Subir container do Grafana
   command: docker-compose -f /home/debian/docker-compose.yaml up -d grafana
