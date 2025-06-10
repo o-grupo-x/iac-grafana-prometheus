@@ -1,0 +1,14 @@
+- name: Ensure Prometheus config directory exists
+  file:
+    path: /home/debian/prometheus
+    state: directory
+    mode: '0755'
+
+- name: Copy Prometheus config
+  copy:
+    src: prometheus.yml
+    dest: /home/debian/prometheus/prometheus.yml
+    mode: '0644'
+
+- name: Start Prometheus container
+  command: docker-compose -f /home/debian/docker-compose.yaml up -d prometheus

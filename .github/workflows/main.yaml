@@ -2,13 +2,17 @@ name: Terraform Plan & Deploy Pipeline
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, dev, gui]
   pull_request:
-    branches: [main, dev]
+    branches: [main, dev, gui]
 
 jobs:
-  terraform:
+  terraform-and-ansible:
     runs-on: ubuntu-latest
+    env:
+      DESTROY_AFTER_RUN: ${{ secrets.DESTROY_AFTER_RUN || 'false' }}
+      GCP_PROJECT: app-chamada-5706
+
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -18,7 +22,7 @@ jobs:
         with:
           terraform_version: 1.8.4
 
-      - name: Restaurar credentials.json a partir do secret codificado
+      - name: Restaurar credentials.json
         run: |
           echo "${{ secrets.GCP_CREDENTIALS_B64 }}" | base64 -d > ./terraform/credentials.json
 
@@ -26,11 +30,88 @@ jobs:
         run: terraform init
         working-directory: ./terraform
 
-      - name: Executar Terraform Plan ou Apply conforme branch
+      - name: Set commit ID
+        run: echo "COMMIT_ID=${GITHUB_SHA}" >> $GITHUB_ENV
+
+      - name: Pre-clean existing resources
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            terraform apply -auto-approve
-          else
-            terraform plan
-          fi
+          gcloud auth activate-service-account --key-file=./terraform/credentials.json
+          gcloud config set project ${{ env.GCP_PROJECT }}
+          CID="${COMMIT_ID:0:8}"
+          gcloud compute instances delete "instance-grafana-prometheus-$CID" --zone us-central1-a --quiet || true
+          gcloud compute firewall-rules delete "allow-ssh-grafana-prometheus-$CID" --quiet || true
+
+      - name: Generate SSH key pair
+        run: |
+          mkdir -p ansible
+          ssh-keygen -t rsa -b 4096 -f ansible/ssh_key -N ""
+          echo "SSH_PUBLIC_KEY=$(cat ansible/ssh_key.pub)" >> $GITHUB_ENV
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var="ssh_public_key=$SSH_PUBLIC_KEY" -var="commit_id=${{ env.COMMIT_ID }}"
+        working-directory: ./terraform
+
+      - name: Obter IP da VM e salvar em variável de ambiente
+        working-directory: ./terraform
+        run: echo "VM_IP=$(terraform output -raw instance_ip)" >> $GITHUB_ENV
+
+      - name: Update Ansible inventory with VM IP
+        working-directory: ./ansible
+        run: |
+          echo "[vm]" > hosts.ini
+          echo "$VM_IP ansible_user=debian ansible_ssh_private_key_file=ssh_key" >> hosts.ini
+
+      - name: Instalar Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Wait for VM to be ready
+        working-directory: ./ansible
+        run: |
+          for i in {1..30}; do
+            if ssh -i ssh_key -o ConnectTimeout=10 -o StrictHostKeyChecking=no debian@$VM_IP "echo SSH ready" 2>/dev/null; then
+              echo "VM SSH is ready"
+              break
+            fi
+            echo "Waiting for VM SSH... ($i/30)"
+            sleep 10
+          done
+
+      - name: Add host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$VM_IP" >> ~/.ssh/known_hosts
+
+      - name: Executar Ansible Playbook
+        working-directory: ./ansible
+        run: ansible-playbook -i hosts.ini playbook.yaml
+
+      - name: Mostrar URL do Grafana
+        run: |
+          echo "Grafana disponível em: http://$VM_IP"
+
+      - name: Cleanup old instances
+        if: success()
+        run: |
+          gcloud auth activate-service-account --key-file=./terraform/credentials.json
+          gcloud config set project app-chamada-5706
+          CURRENT_ID="${COMMIT_ID:0:8}"
+          gcloud compute instances list --filter="name~'instance-grafana-prometheus-'" --format=json \
+            | jq -r '.[] | [.name, (.zone | split("/")[-1])] | @tsv' \
+            | while IFS=$'\t' read -r NAME ZONE; do
+                if [ "$NAME" != "instance-grafana-prometheus-$CURRENT_ID" ]; then
+                  gcloud compute instances delete "$NAME" --zone "$ZONE" --quiet
+                fi
+              done
+          gcloud compute firewall-rules list --filter="name~'allow-ssh-grafana-prometheus-'" --format='value(name)' \
+            | while read -r RULE; do
+                if [ "$RULE" != "allow-ssh-grafana-prometheus-$CURRENT_ID" ]; then
+                  gcloud compute firewall-rules delete "$RULE" --quiet
+                fi
+              done
+
+      - name: Destroy infrastructure
+        if: env.DESTROY_AFTER_RUN == 'true'
+        run: terraform destroy -auto-approve -var="commit_id=${{ env.COMMIT_ID }}"
         working-directory: ./terraform

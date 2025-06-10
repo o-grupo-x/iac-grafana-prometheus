@@ -1,0 +1,8 @@
+- hosts: vm
+  become: yes
+  roles:
+    - docker
+    - grafana
+    - prometheus
+    - node-exporter
+    - nginx

@@ -1,0 +1,9 @@
+- name: Copy nginx configuration
+  copy:
+    src: "{{ playbook_dir }}/../nginx.conf"
+    dest: /home/debian/nginx.conf
+    mode: '0644'
+
+- name: Start nginx reverse proxy
+  command: docker-compose -f /home/debian/docker-compose.yaml up -d nginx
+
